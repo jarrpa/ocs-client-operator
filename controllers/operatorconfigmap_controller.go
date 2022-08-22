@@ -199,22 +199,22 @@ func (c *OperatorConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			c.log.Error(err, "unable to reconcile webhook service")
 			return ctrl.Result{}, err
 		}
+		/*
+			if err := c.reconcileSubscriptionValidatingWebhook(); err != nil {
+				c.log.Error(err, "unable to register subscription validating webhook")
+				return ctrl.Result{}, err
+			}
 
-		if err := c.reconcileSubscriptionValidatingWebhook(); err != nil {
-			c.log.Error(err, "unable to register subscription validating webhook")
-			return ctrl.Result{}, err
-		}
+			if err := c.reconcileClientOperatorSubscriptionLabel(); err != nil {
+				c.log.Error(err, "unable to label ocs client operator subscription")
+				return ctrl.Result{}, err
+			}
 
-		if err := c.reconcileClientOperatorSubscriptionLabel(); err != nil {
-			c.log.Error(err, "unable to label ocs client operator subscription")
-			return ctrl.Result{}, err
-		}
-
-		if err := c.reconcileSubscription(); err != nil {
-			c.log.Error(err, "unable to reconcile subscription")
-			return ctrl.Result{}, err
-		}
-
+			if err := c.reconcileSubscription(); err != nil {
+				c.log.Error(err, "unable to reconcile subscription")
+				return ctrl.Result{}, err
+			}
+		*/
 		if err := c.ensureConsolePlugin(); err != nil {
 			c.log.Error(err, "unable to deploy client console")
 			return ctrl.Result{}, err

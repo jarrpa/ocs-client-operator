@@ -698,8 +698,8 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: STATUS_REPORTER_IMAGE
-                  value: quay.io/ocs-dev/ocs-client-operator:latest
-                image: quay.io/ocs-dev/ocs-client-operator:latest
+                  value: quay.io/jarrpa/ocs-client-operator:latest
+                image: quay.io/jarrpa/ocs-client-operator:latest
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
@@ -755,7 +755,7 @@ spec:
                 app.kubernetes.io/name: ocs-client-operator-console
             spec:
               containers:
-              - image: quay.io/ocs-dev/ocs-client-console:latest
+              - image: quay.io/jarrpa/ocs-client-console:latest
                 livenessProbe:
                   httpGet:
                     path: /plugin-manifest.json
