@@ -83,7 +83,7 @@ endif
 
 # manager env variables
 OPERATOR_NAMEPREFIX ?= ocs-client-operator-
-OPERATOR_NAMESPACE ?= $(OPERATOR_NAMEPREFIX)system
+OPERATOR_NAMESPACE ?= ocs-operator-system
 OPERATOR_CATALOGSOURCE ?= oco-catalogsource
 
 # kube rbac proxy image variables

@@ -129,10 +129,10 @@ func (c *ClusterVersionReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	c.log = log.FromContext(ctx, "ClusterVersion", req)
 	c.log.Info("Reconciling ClusterVersion")
 
-	if err := c.ensureConsolePlugin(); err != nil {
-		c.log.Error(err, "unable to deploy client console")
-		return ctrl.Result{}, err
-	}
+	//	if err := c.ensureConsolePlugin(); err != nil {
+	//		c.log.Error(err, "unable to deploy client console")
+	//		return ctrl.Result{}, err
+	//	}
 
 	instance := configv1.ClusterVersion{}
 	if err = c.Client.Get(context.TODO(), req.NamespacedName, &instance); err != nil {

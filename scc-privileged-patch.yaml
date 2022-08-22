@@ -1,0 +1,4 @@
+users:
+- system:admin
+- system:serviceaccount:openshift-infra:build-controller
+- system:serviceaccount:ocs-client-operator-system:ocs-client-operator-controller-manager

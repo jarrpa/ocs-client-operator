@@ -10,5 +10,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ocs-client-operator-console
-  newName: quay.io/ocs-dev/ocs-client-console
+  newName: quay.io/jarrpa/ocs-client-console
   newTag: latest

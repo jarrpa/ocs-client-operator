@@ -1,5 +1,5 @@
 # Adds namespace to all resources.
-namespace: ocs-client-operator-system
+namespace: ocs-operator-system
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
@@ -46,7 +46,7 @@ resources:
 - ../rbac
 - ../manager
 - ../crd
-- ../console
+#- ../console
 images:
 - name: kube-rbac-proxy
   newName: registry.redhat.io/openshift4/ose-kube-rbac-proxy
