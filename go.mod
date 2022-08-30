@@ -29,6 +29,7 @@ require (
 	github.com/onsi/gomega v1.18.1
 	github.com/openshift/api v0.0.0-20220421141645-441fe135b2fc
 	github.com/stretchr/testify v1.7.0
+	go.uber.org/zap v1.19.1
 	google.golang.org/grpc v1.45.0
 	k8s.io/api v0.23.6
 	k8s.io/apimachinery v0.23.6
@@ -75,7 +76,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/crypto v0.0.0-20220208050332-20e1d8d225ab // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
