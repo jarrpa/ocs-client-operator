@@ -180,7 +180,6 @@ func (r *OcsClientReconciler) deletionPhase(instance *v1alpha1.OcsClient, extern
 
 		if res, err := r.offboardConsumer(instance, externalClusterClient); err != nil {
 			r.Log.Info("Offboarding in progress.", "Status", err)
-			//r.recorder.ReportIfNotPresent(instance, corev1.EventTypeWarning, statusutil.EventReasonUninstallPending, err.Error())
 			return reconcile.Result{RequeueAfter: time.Second * time.Duration(1)}, nil
 		} else if !res.IsZero() {
 			// result is not empty
@@ -253,7 +252,7 @@ func (r *OcsClientReconciler) acknowledgeOnboarding(instance *v1alpha1.OcsClient
 		if s, ok := status.FromError(err); ok {
 			r.logGrpcErrorAndReportEvent(instance, AcknowledgeOnboarding, err, s.Code())
 		}
-		r.Log.Error(err, "External-OCS:Failed to acknowledge onboarding.")
+		r.Log.Error(err, "failed to acknowledge consumer onboarding.")
 		return reconcile.Result{}, err
 	}
 
@@ -263,9 +262,9 @@ func (r *OcsClientReconciler) acknowledgeOnboarding(instance *v1alpha1.OcsClient
 		return reconcile.Result{}, err
 	}
 
-	// instance.Status.Phase = statusutil.PhaseProgressing
+	instance.Status.Phase = v1alpha1.OcsClientUpdating
 
-	r.Log.Info("External-OCS:Onboarding is acknowledged successfully.")
+	r.Log.Info("consumer onboarding acknowledged")
 	return reconcile.Result{Requeue: true}, nil
 }
 
