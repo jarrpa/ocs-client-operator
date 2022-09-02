@@ -148,16 +148,20 @@ func (r *OcsClientReconciler) reconcilePhases(instance *v1alpha1.OcsClient) (ctr
 		return r.deletionPhase(instance, externalClusterClient)
 	}
 
-	instance.Status.Phase = v1alpha1.OcsClientInitializing
+	if instance.Status.Phase == "" {
+		instance.Status.Phase = v1alpha1.OcsClientInitializing
+	}
 
 	// ensure finalizer
 	if !contains(instance.GetFinalizers(), ocsClientFinalizer) {
 		r.Log.Info("Finalizer not found for OcsClient. Adding finalizer.", "OcsClient", klog.KRef(instance.Namespace, instance.Name))
 		instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, ocsClientFinalizer)
+		instanceStatus := instance.Status.DeepCopy()
 		if err := r.Client.Update(context.TODO(), instance); err != nil {
 			r.Log.Info("Failed to update OcsClient with finalizer.", "OcsClient", klog.KRef(instance.Namespace, instance.Name))
 			return reconcile.Result{}, err
 		}
+		instance.Status = *(instanceStatus)
 	}
 
 	if instance.Status.ConsumerID == "" {
