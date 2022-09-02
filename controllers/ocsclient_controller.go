@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -29,6 +30,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -170,7 +172,9 @@ func (r *OcsClientReconciler) reconcilePhases(instance *v1alpha1.OcsClient) (ctr
 		return r.acknowledgeOnboarding(instance, externalClusterClient)
 	}
 
-	return reconcile.Result{}, nil
+	res, err := r.getExternalConfigFromProvider(instance, externalClusterClient)
+
+	return res, err
 }
 
 func (r *OcsClientReconciler) deletionPhase(instance *v1alpha1.OcsClient, externalClusterClient *providerClient.OCSProviderClient) (ctrl.Result, error) {
@@ -281,10 +285,11 @@ func (r *OcsClientReconciler) offboardConsumer(instance *v1alpha1.OcsClient, ext
 	return reconcile.Result{}, nil
 }
 
-/*
 // getExternalConfigFromProvider makes an API call to the external storage provider cluster for json blob
 func (r *OcsClientReconciler) getExternalConfigFromProvider(
-	instance *v1alpha1.OcsClient, externalClusterClient *providerClient.OCSProviderClient) ([]ExternalResource, reconcile.Result, error) {
+	instance *v1alpha1.OcsClient, externalClusterClient *providerClient.OCSProviderClient) (reconcile.Result, error) {
+
+	instance.Status.Phase = v1alpha1.OcsClientUpdating
 
 	response, err := externalClusterClient.GetStorageConfig(context.Background(), instance.Status.ConsumerID)
 	if err != nil {
@@ -293,14 +298,19 @@ func (r *OcsClientReconciler) getExternalConfigFromProvider(
 
 			// storage consumer is not ready yet, requeue after some time
 			if s.Code() == codes.Unavailable {
-				return nil, reconcile.Result{RequeueAfter: time.Second * 5}, nil
+				return reconcile.Result{RequeueAfter: time.Second * 5}, nil
 			}
 		}
 
-		return nil, reconcile.Result{}, err
+		return reconcile.Result{}, err
 	}
 
-	var externalResources []ExternalResource
+	ownerRef := metav1.OwnerReference{
+		UID:        instance.UID,
+		APIVersion: instance.APIVersion,
+		Kind:       instance.Kind,
+		Name:       instance.Name,
+	}
 
 	for _, eResource := range response.ExternalResource {
 
@@ -308,19 +318,44 @@ func (r *OcsClientReconciler) getExternalConfigFromProvider(
 		err = json.Unmarshal(eResource.Data, &data)
 		if err != nil {
 			r.Log.Error(err, "Failed to Unmarshal response of GetStorageConfig", "Kind", eResource.Kind, "Name", eResource.Name, "Data", eResource.Data)
-			return nil, reconcile.Result{}, err
+			return reconcile.Result{}, err
 		}
-
-		externalResources = append(externalResources, ExternalResource{
-			Kind: eResource.Kind,
-			Data: data,
-			Name: eResource.Name,
-		})
+		objectMeta := metav1.ObjectMeta{
+			Name:            eResource.Name,
+			Namespace:       instance.Namespace,
+			OwnerReferences: []metav1.OwnerReference{ownerRef},
+		}
+		r.Log.Info("eResource", "Kind", eResource.Kind, "Meta", objectMeta, "Data", data)
+		// objectKey := types.NamespacedName{Name: objectMeta.Name, Namespace: objectMeta.Namespace}
+		switch eResource.Kind {
+		case "ConfigMap":
+			cm := &corev1.ConfigMap{
+				ObjectMeta: objectMeta,
+			}
+			_, err = controllerutil.CreateOrUpdate(context.TODO(), r.Client, cm, func() error {
+				cm.Data = data
+				return nil
+			})
+		case "Secret":
+			sec := &corev1.Secret{
+				ObjectMeta: objectMeta,
+				Data:       make(map[string][]byte),
+			}
+			_, err = controllerutil.CreateOrUpdate(context.TODO(), r.Client, sec, func() error {
+				for k, v := range data {
+					sec.Data[k] = []byte(v)
+				}
+				return nil
+			})
+		default:
+			continue
+		}
 	}
 
-	return externalResources, reconcile.Result{}, nil
+	instance.Status.Phase = v1alpha1.OcsClientConnected
+	return reconcile.Result{}, nil
 }
-*/
+
 func (r *OcsClientReconciler) logGrpcErrorAndReportEvent(instance *v1alpha1.OcsClient, grpcCallName string, err error, errCode codes.Code) {
 
 	// var msg, eventReason, eventType string
