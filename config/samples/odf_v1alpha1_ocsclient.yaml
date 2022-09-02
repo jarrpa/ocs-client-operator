@@ -3,4 +3,6 @@ kind: OcsClient
 metadata:
   name: ocsclient-sample
 spec:
-  # TODO(user): Add fields here
+  storageProviderEndpoint: "endpoint.example.com:50051"
+  onboardingTicket: "SIGNED_PAYLOAD"
+  requestedCapacity: 1

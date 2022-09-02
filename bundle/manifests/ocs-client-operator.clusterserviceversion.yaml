@@ -10,7 +10,11 @@ metadata:
           "metadata": {
             "name": "ocsclient-sample"
           },
-          "spec": null
+          "spec": {
+            "onboardingTicket": "SIGNED_PAYLOAD",
+            "requestedCapacity": 1,
+            "storageProviderEndpoint": "endpoint.example.com:50051"
+          }
         },
         {
           "apiVersion": "odf.openshift.io/v1alpha1",
