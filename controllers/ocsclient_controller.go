@@ -168,11 +168,6 @@ func (r *OcsClientReconciler) reconcilePhases(instance *v1alpha1.OcsClient) (ctr
 		return r.onboardConsumer(instance, externalClusterClient)
 	} else if instance.Status.Phase == v1alpha1.OcsClientOnboarding {
 		return r.acknowledgeOnboarding(instance, externalClusterClient)
-	} else if !instance.Spec.RequestedCapacity.Equal(instance.Status.GrantedCapacity) {
-		res, err := r.updateConsumerCapacity(instance, externalClusterClient)
-		if err != nil || !res.IsZero() {
-			return res, err
-		}
 	}
 
 	return reconcile.Result{}, nil
@@ -282,38 +277,6 @@ func (r *OcsClientReconciler) offboardConsumer(instance *v1alpha1.OcsClient, ext
 		}
 		return reconcile.Result{}, err
 	}
-
-	return reconcile.Result{}, nil
-}
-
-// updateConsumerCapacity makes an API call to the external storage provider cluster to update the capacity
-func (r *OcsClientReconciler) updateConsumerCapacity(instance *v1alpha1.OcsClient, externalClusterClient *providerClient.OCSProviderClient) (reconcile.Result, error) {
-	instance.Status.Phase = v1alpha1.OcsClientUpdating
-
-	response, err := externalClusterClient.UpdateCapacity(
-		context.Background(),
-		instance.Status.ConsumerID,
-		instance.Spec.RequestedCapacity.String())
-	if err != nil {
-		if s, ok := status.FromError(err); ok {
-			r.logGrpcErrorAndReportEvent(instance, UpdateCapacity, err, s.Code())
-		}
-		return reconcile.Result{}, err
-	}
-
-	responseQuantity, err := resource.ParseQuantity(response.GrantedCapacity)
-	if err != nil {
-		r.Log.Error(err, "Failed to parse GrantedCapacity from UpdateCapacity response.", "GrantedCapacity", response.GrantedCapacity)
-		return reconcile.Result{}, err
-	}
-
-	if !instance.Spec.RequestedCapacity.Equal(responseQuantity) {
-		klog.Warningf("GrantedCapacity is not equal to the RequestedCapacity in the UpdateCapacity response.",
-			"GrantedCapacity", response.GrantedCapacity, "RequestedCapacity", instance.Spec.RequestedCapacity)
-	}
-
-	instance.Status.GrantedCapacity = responseQuantity
-	instance.Status.Phase = v1alpha1.OcsClientConnected
 
 	return reconcile.Result{}, nil
 }
