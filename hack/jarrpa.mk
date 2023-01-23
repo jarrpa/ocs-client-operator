@@ -35,8 +35,12 @@ onboard-consumer: ## Create OcsClient CR
 oc: ## Run oc commands with ARGS
 	${OCP_OC} ${ARGS}
 
+hax: ## Temporary workarounds
+	${OCP_OC} patch scc privileged --type=merge --patch-file scc-privileged-patch.yaml
+
 watch: ## Watch it
-	watch -n1 "${OCP_OC} get -n ocs-client-operator-system ocsclient,storageclassclaim,secret,cm,deployment,replicaset,po"
+	#watch -n1 "${OCP_OC} get -n ocs-client-operator-system ocsclient,storageclassclaim,secret,cm,deployment,replicaset,po"
+	watch -n1 "${OCP_OC} get -n ocs-client-operator-system ocsclient,storageclassclaim,cm,pvc,pv,po"
 
 logs:
 	$(OCP_OC) logs -n $(IMAGE_NAME)-system deployment/$(IMAGE_NAME)-controller-manager
