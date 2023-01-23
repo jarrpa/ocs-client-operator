@@ -14,7 +14,19 @@ spec:
     singular: ocsclient
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Current Phase
+      jsonPath: .status.phase
+      name: Phase
+      type: string
+    - description: Consumer ID
+      jsonPath: .status.consumerid
+      name: Consumer ID
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: OcsClient is the Schema for the ocsclients API

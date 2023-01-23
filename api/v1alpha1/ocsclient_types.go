@@ -36,8 +36,6 @@ const (
 	OcsClientOffboarding ocsClientPhase = "Offboarding"
 )
 
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // OcsClientSpec defines the desired state of OcsClient
 type OcsClientSpec struct {
 	// StorageProviderEndpoint holds info to establish connection with the storage providing cluster.
@@ -62,8 +60,11 @@ type OcsClientStatus struct {
 	ConsumerID string `json:"id,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=.status.phase,description="Current Phase"
+// +kubebuilder:printcolumn:name="Consumer ID",type=string,JSONPath=.status.consumerid,description="Consumer ID"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=.metadata.creationTimestamp
 
 // OcsClient is the Schema for the ocsclients API
 type OcsClient struct {
