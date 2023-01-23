@@ -5,4 +5,4 @@ metadata:
 spec:
   storageProviderEndpoint: "endpoint.example.com:50051"
   onboardingTicket: "SIGNED_PAYLOAD"
-  requestedCapacity: 1
+  requestedCapacity: "1Ti"
