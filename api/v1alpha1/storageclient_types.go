@@ -58,7 +58,8 @@ type StorageClientStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 //+kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"
-//+kubebuilder:printcolumn:name="consumer",type="string",JSONPath=".status.id"
+//+kubebuilder:printcolumn:name="Consumer",type="string",JSONPath=".status.id"
+//+kubebuilder:printcolumn:name="Age",type="string",JSONPath=".metadata.creationTimestamp"
 
 // StorageClient is the Schema for the storageclients API
 type StorageClient struct {

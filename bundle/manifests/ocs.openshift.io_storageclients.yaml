@@ -19,7 +19,10 @@ spec:
       name: Phase
       type: string
     - jsonPath: .status.id
-      name: consumer
+      name: Consumer
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
       type: string
     name: v1alpha1
     schema:
