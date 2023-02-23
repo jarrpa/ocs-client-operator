@@ -1,0 +1,16 @@
+apiVersion: ocs.openshift.io/v1alpha1
+kind: StorageClaim
+metadata:
+  labels:
+    app.kubernetes.io/name: storageclaim
+    app.kubernetes.io/instance: storageclaim-sample
+    app.kubernetes.io/part-of: ocs-client-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: ocs-client-operator
+  name: example-storagecluster-ceph-rbd-slow
+spec:
+  type: blockpool
+  storageClient:
+    name: "storageclient-sample"
+    namespace: "ocs-operator-system"
+  storageProfile: "slow"
