@@ -90,26 +90,26 @@ container-push: ## Push container image with the manager.
 ##@ Deployment
 
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
 
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete -f -
 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	cd config/default && $(KUSTOMIZE) edit set image kube-rbac-proxy=$(RBAC_PROXY_IMG)
 	cd config/console && $(KUSTOMIZE) edit set image ocs-client-operator-console=$(OCS_CLIENT_CONSOLE_IMG)
-	$(KUSTOMIZE) build config/default | sed "s|STATUS_REPORTER_IMAGE_VALUE|$(IMG)|g" | awk '{print}' | kubectl apply -f -
+	$(KUSTOMIZE) build config/default | sed "s|STATUS_REPORTER_IMAGE_VALUE|$(IMG)|g" | awk '{print}' | $(KUBECTL) apply -f -
 
 remove: ## Remove controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl delete -f -
+	$(KUSTOMIZE) build config/default | $(KUBECTL) delete -f -
 
 deploy-with-olm: kustomize ## Deploy controller to the K8s cluster via OLM
 	cd config/install && $(KUSTOMIZE) edit set image catalog-img=${CATALOG_IMG}
-	$(KUSTOMIZE) build config/install | sed "s/ocs-client-operator.v.*/ocs-client-operator.v${VERSION}/g" | kubectl create -f -
+	$(KUSTOMIZE) build config/install | sed "s/ocs-client-operator.v.*/ocs-client-operator.v${VERSION}/g" | $(KUBECTL) create -f -
 
 remove-with-olm: ## Remove controller from the K8s cluster
-	$(KUSTOMIZE) build config/install | kubectl delete -f -
+	$(KUSTOMIZE) build config/install | $(KUBECTL) delete -f -
 
 .PHONY: bundle
 bundle: manifests kustomize operator-sdk yq ## Generate bundle manifests and metadata, then validate generated files.
