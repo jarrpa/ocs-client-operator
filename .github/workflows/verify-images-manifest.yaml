@@ -1,0 +1,25 @@
+---
+name: verify-csi-images-manifest
+
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    branches: ['*']
+
+jobs:
+  verify-csi-images-manifest:
+    name: verify-csi-images-manifest
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - uses: actions/checkout@v2
+
+      - name: Verify CSI images manifest
+        desc: Verify the target to generate the CSI images manifest has been run correctly.
+        run: make verify-csi-images-manifest
