@@ -358,6 +358,9 @@ func (r *StorageClassClaimReconciler) reconcilePhases() (reconcile.Result, error
 				if err != nil {
 					return reconcile.Result{}, fmt.Errorf("failed to create or update StorageClass: %s", err)
 				}
+			case "CephBlockPoolRadosNamespace":
+				csiClusterConfigEntry.CephRBD = new(csi.CephRBDSpec)
+				csiClusterConfigEntry.CephRBD.RadosNamespace = resource.Name
 			case "VolumeSnapshotClass":
 				var volumeSnapshotClass *snapapi.VolumeSnapshotClass
 				data["csi.storage.k8s.io/snapshotter-secret-namespace"] = r.storageClient.Namespace
