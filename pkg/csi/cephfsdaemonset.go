@@ -77,6 +77,7 @@ var cephFSDaemonSetSpec = appsv1.DaemonSetSpec{
 						"--type=cephfs",
 						"--nodeserver=true",
 						fmt.Sprintf("--drivername=%s", GetCephFSDriverName()),
+						"--kernelmountoptions=ms_mode=prefer-crc",
 					},
 					Env: []corev1.EnvVar{
 						{

@@ -93,6 +93,7 @@ var rbdDaemonSetSpec = appsv1.DaemonSetSpec{
 						fmt.Sprintf("--drivername=%s", GetRBDDriverName()),
 						fmt.Sprintf("--stagingpath=%s/plugins/kubernetes.io/csi/", templates.DefaultKubeletDirPath),
 						"--csi-addons-endpoint=$(CSIADDONS_ENDPOINT)",
+						"--kernelmountoptions=ms_mode=prefer-crc",
 					},
 					Env: []corev1.EnvVar{
 						{
