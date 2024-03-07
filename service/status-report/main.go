@@ -18,11 +18,11 @@ package main
 
 import (
 	"context"
+	"os"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/red-hat-storage/ocs-client-operator/api/v1alpha1"
 	"github.com/red-hat-storage/ocs-client-operator/pkg/csi"
@@ -90,21 +90,33 @@ func main() {
 		klog.Exitf("Failed to get storageClient %q/%q: %v", storageClient.Namespace, storageClient.Name, err)
 	}
 
-	var oprVersion string
-	csvList := opv1a1.ClusterServiceVersionList{}
-	if err = cl.List(ctx, &csvList, client.InNamespace(operatorNamespace)); err != nil {
-		klog.Warningf("Failed to list csv resources: %v", err)
-	} else {
-		item := utils.Find(csvList.Items, func(csv *opv1a1.ClusterServiceVersion) bool {
-			return strings.HasPrefix(csv.Name, csvPrefix)
-		})
-		if item != nil {
-			oprVersion = item.Spec.Version.String()
-		}
-	}
-	if oprVersion == "" {
-		klog.Warningf("Unable to find csv with prefix %q", csvPrefix)
-	}
+	/*
+		var oprVersion string
+		csvList := opv1a1.ClusterServiceVersionList{}
+		if err = cl.List(ctx, &csvList, client.InNamespace(operatorNamespace)); err != nil {
+			klog.Warningf("Failed to list csv resources: %v", err)
+		} else {
+			item := utils.Find(csvList.Items, func(csv *opv1a1.ClusterServiceVersion) bool {
+				return strings.HasPrefix(csv.Name, csvPrefix)
+			})
+			if item != nil {
+				oprVersion = item.Spec.Version.String()
+			var oprVersion string
+			csvList := opv1a1.ClusterServiceVersionList{}
+			if err = cl.List(ctx, &csvList, client.InNamespace(storageClientNamespace)); err != nil {
+				klog.Warningf("Failed to list csv resources: %v", err)
+			} else {
+				item := utils.Find(csvList.Items, func(csv *opv1a1.ClusterServiceVersion) bool {
+					return strings.HasPrefix(csv.Name, csvPrefix)
+				})
+				if item != nil {
+					oprVersion = item.Spec.Version.String()
+				}
+			}
+			if oprVersion == "" {
+				klog.Warningf("Unable to find csv with prefix %q", csvPrefix)
+			}
+	*/
 
 	var pltVersion string
 	var clusterID configv1.ClusterID
@@ -160,7 +172,7 @@ func main() {
 
 	status := providerclient.NewStorageClientStatus().
 		SetPlatformVersion(pltVersion).
-		SetOperatorVersion(oprVersion).
+		SetOperatorVersion("4.16.0").
 		SetClusterID(string(clusterID)).
 		SetClusterName(clusterName).
 		SetClientName(storageClientName)

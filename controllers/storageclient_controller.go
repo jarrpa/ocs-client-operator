@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/red-hat-storage/ocs-client-operator/api/v1alpha1"
 	"github.com/red-hat-storage/ocs-client-operator/pkg/utils"
 
 	configv1 "github.com/openshift/api/config/v1"
-	opv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	providerClient "github.com/red-hat-storage/ocs-operator/v4/services/provider/client"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -260,22 +258,24 @@ func (r *StorageClientReconciler) onboardConsumer(externalClusterClient *provide
 		return reconcile.Result{}, fmt.Errorf("failed to get the clusterVersion version of the OCP cluster: %v", err)
 	}
 
-	// TODO Have a version file corresponding to the release
-	csvList := opv1a1.ClusterServiceVersionList{}
-	if err := r.list(&csvList, client.InNamespace(r.OperatorNamespace)); err != nil {
-		return reconcile.Result{}, fmt.Errorf("failed to list csv resources in ns: %v, err: %v", r.OperatorNamespace, err)
-	}
-	csv := utils.Find(csvList.Items, func(csv *opv1a1.ClusterServiceVersion) bool {
-		return strings.HasPrefix(csv.Name, csvPrefix)
-	})
-	if csv == nil {
-		return reconcile.Result{}, fmt.Errorf("unable to find csv with prefix %q", csvPrefix)
-	}
+	/*
+		// TODO Have a version file corresponding to the release
+		csvList := opv1a1.ClusterServiceVersionList{}
+		if err := r.list(&csvList, client.InNamespace(r.OperatorNamespace)); err != nil {
+			return reconcile.Result{}, fmt.Errorf("failed to list csv resources in ns: %v, err: %v", r.OperatorNamespace, err)
+		}
+		csv := utils.Find(csvList.Items, func(csv *opv1a1.ClusterServiceVersion) bool {
+			return strings.HasPrefix(csv.Name, csvPrefix)
+		})
+		if csv == nil {
+			return reconcile.Result{}, fmt.Errorf("unable to find csv with prefix %q", csvPrefix)
+		}
+	*/
 	name := fmt.Sprintf("storageconsumer-%s", clusterVersion.Spec.ClusterID)
 	onboardRequest := providerClient.NewOnboardConsumerRequest().
 		SetConsumerName(name).
 		SetOnboardingTicket(r.storageClient.Spec.OnboardingTicket).
-		SetClientOperatorVersion(csv.Spec.Version.String())
+		SetClientOperatorVersion("4.16.0")
 	response, err := externalClusterClient.OnboardConsumer(r.ctx, onboardRequest)
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
