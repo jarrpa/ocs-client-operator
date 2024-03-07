@@ -24,12 +24,8 @@ PROVIDER_NAMESPACE ?= ocs-operator-system
 
 TICKETGEN_DIR ?= /home/jrivera/projects/github.com/red-hat-storage/ocs-operator/hack/ticketgen
 onboard-consumer: ## Create OcsClient CR
-	cd $(TICKETGEN_DIR); ./ticketgen.sh key.pem > onboarding-ticket.txt
-	$(PROVIDER_OC) delete secret -n $(PROVIDER_NAMESPACE) --ignore-not-found onboarding-ticket-key
-	$(PROVIDER_OC) create secret -n $(PROVIDER_NAMESPACE) generic onboarding-ticket-key \
-		--from-file=key=$(TICKETGEN_DIR)/pubkey.pem
 	cat config/samples/ocs_v1alpha1_storageclient.yaml | $(OCP_OC) delete -n $(OPERATOR_NAMESPACE) --ignore-not-found -f -
-	export ONBOARDING_TICKET="$$(cat $(TICKETGEN_DIR)/onboarding-ticket.txt)"; echo "$${ONBOARDING_TICKET}"; \
+	export ONBOARDING_TICKET="$$(curl -kX POST http://ux-backend-proxy-ocs-operator-system.apps.sno-dev.jarrpa.dev/onboarding-tokens)"; echo "$${ONBOARDING_TICKET}"; \
 	export PROVIDER_ENDPOINT="$$($(PROVIDER_OC) get -n $(PROVIDER_NAMESPACE) storagecluster -oyaml | grep ProviderEndpoint | sed "s/^.*: //")"; echo "$${PROVIDER_ENDPOINT}"; \
 		cat config/samples/ocs_v1alpha1_storageclient.yaml | \
 		sed "s#storageProviderEndpoint: .*#storageProviderEndpoint: \"$${PROVIDER_ENDPOINT}\"#g" | \
@@ -56,7 +52,7 @@ hax: ## Temporary workarounds
 
 watch: ## Watch it
 	#watch -n1 "${OCP_OC} get -n $(OPERATOR_NAMESPACE) ocsclient,storageclassclaim,secret,cm,deployment,replicaset,po"
-	watch -n1 "${OCP_OC} get -n $(OPERATOR_NAMESPACE) storageclient,storageclassclaim,pvc,cm,po"
+	watch -ptn1 "${OCP_OC} get -n $(OPERATOR_NAMESPACE) storageclient,storageclassclaim; echo "";  ${OCP_OC} get -n $(OPERATOR_NAMESPACE) storageclient,storageclassclaim,pvc,cm -oname"
 
 logs:
 	$(OCP_OC) logs -n $(IMAGE_NAME)-system deployment/$(IMAGE_NAME)-controller-manager
