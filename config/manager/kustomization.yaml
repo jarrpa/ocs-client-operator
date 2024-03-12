@@ -19,4 +19,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/jarrpa/ocs-client-operator
-  newTag: latest
+  newTag: rns-dev

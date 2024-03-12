@@ -10,7 +10,7 @@ KUBECTL ?= $(OCP_DIR)/bin/oc
 #KUBECONFIG ?= /home/jrivera/projects/github.com/ocs-operator/eks.kubeconfig
 TEST_DEPLOY_DIR ?= upgrade-testing/
 
-IMAGE_TAG ?= latest
+IMAGE_TAG ?= rns-dev
 REGISTRY_NAMESPACE ?= jarrpa
 SKIP_CSV_DUMP ?= true
 

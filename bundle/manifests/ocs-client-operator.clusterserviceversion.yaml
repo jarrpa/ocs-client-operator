@@ -698,8 +698,8 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: STATUS_REPORTER_IMAGE
-                  value: quay.io/jarrpa/ocs-client-operator:latest
-                image: quay.io/jarrpa/ocs-client-operator:latest
+                  value: quay.io/jarrpa/ocs-client-operator:rns-dev
+                image: quay.io/jarrpa/ocs-client-operator:rns-dev
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
