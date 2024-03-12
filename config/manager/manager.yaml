@@ -11,21 +11,22 @@ metadata:
   name: controller-manager
   namespace: system
   labels:
-    control-plane: controller-manager
-    app: ocs-client-operator
+    operator: ocs-client
+    app.kubernetes.io/name: ocs
+    app.kubernetes.io/component: client-operator
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
-      app: ocs-client-operator
+      operator: ocs-client
   replicas: 1
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        control-plane: controller-manager
-        app: ocs-client-operator
+        operator: ocs-client
+        app.kubernetes.io/name: ocs
+        app.kubernetes.io/component: client-operator
     spec:
       securityContext:
         runAsNonRoot: true
