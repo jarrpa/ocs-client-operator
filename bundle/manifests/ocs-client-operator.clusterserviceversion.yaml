@@ -700,6 +700,7 @@ spec:
                 - name: STATUS_REPORTER_IMAGE
                   value: quay.io/ocs-dev/ocs-client-operator:latest
                 image: quay.io/ocs-dev/ocs-client-operator:latest
+                imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
                     path: /healthz
