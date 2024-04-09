@@ -34,6 +34,7 @@ import (
 	"github.com/go-logr/logr"
 	snapapi "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	providerclient "github.com/red-hat-storage/ocs-operator/v4/services/provider/client"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -53,6 +54,8 @@ import (
 const (
 	storageClaimFinalizer  = "storageclaim.ocs.openshift.io"
 	storageClaimAnnotation = "ocs.openshift.io/storageclaim"
+
+	pendingOperationsAnnotation = "ops.ocs.openshift.io/pending"
 
 	pvClusterIDIndexName  = "index:persistentVolumeClusterID"
 	vscClusterIDIndexName = "index:volumeSnapshotContentCSIDriver"
@@ -408,6 +411,62 @@ func (r *StorageClaimReconciler) reconcilePhases() (reconcile.Result, error) {
 				if err := r.createOrReplaceVolumeSnapshotClass(volumeSnapshotClass); err != nil {
 					return reconcile.Result{}, fmt.Errorf("failed to create or update VolumeSnapshotClass: %s", err)
 				}
+			case "Job":
+				var job *batchv1.Job
+				err = json.Unmarshal([]byte(data["job-manifest"]), job)
+				if err != nil {
+					return reconcile.Result{}, fmt.Errorf("failed to unmarshal StorageClaim Job %q: %v", resource.Name, err)
+				}
+
+				opType := data["op-type"]
+				opPhase := data["op-phase"]
+				opPhaseAnnotation := opType + ".ops.ocs.openshift.io/phase"
+				previousPhase, previousPhaseFound := r.storageClaim.Annotations[opPhaseAnnotation]
+
+				pendingOps := strings.Split(r.storageClaim.Annotations[pendingOperationsAnnotation], ",")
+				if !slices.Contains(pendingOps, opType) {
+					pendingOps = append(pendingOps, opType)
+				}
+
+				if opPhase == "Requested" {
+					if !previousPhaseFound || previousPhase == opPhase {
+						r.log.Info("provider has requested an operation", "StorageClaim", r.storageClaim.Name, "Operation", opType)
+					} else {
+						opPhase = previousPhase
+					}
+				}
+
+				updateStorageClaim = false
+				updateStorageClaim = utils.AddAnnotation(r.storageClaim, opPhaseAnnotation, opPhase) || updateStorageClaim
+				updateStorageClaim = utils.AddAnnotation(r.storageClaim, pendingOperationsAnnotation, strings.Join(pendingOps, ",")) || updateStorageClaim
+
+				if updateStorageClaim {
+					if err := r.update(r.storageClaim); err != nil {
+						return reconcile.Result{}, fmt.Errorf("failed to update StorageClaim %q: %v", r.storageClaim.Name, err)
+					}
+				}
+
+				if opPhase == "Requested" || opPhase == "Completed" {
+					break
+				}
+
+				_, err = controllerutil.CreateOrUpdate(r.ctx, r.Client, job, func() error {
+					// cluster scoped resource owning namespace scoped resource which allows garbage collection
+					if err := r.own(job); err != nil {
+						return fmt.Errorf("failed to own job: %v", err)
+					}
+
+					for _, c := range job.Spec.Template.Spec.Containers {
+						c.Env = append(c.Env, corev1.EnvVar{Name: "STORAGE_CLAIM", Value: r.storageClaim.Name})
+						c.Env = append(c.Env, corev1.EnvVar{Name: "OP_PHASE", Value: opPhase})
+						c.Env = append(c.Env, corev1.EnvVar{Name: "CLUSTER_ID", Value: r.storageClaimHash})
+					}
+
+					return nil
+				})
+				if err != nil {
+					return reconcile.Result{}, fmt.Errorf("failed to create or update Job %v: %s", job, err)
+				}
 			}
 		}
 
@@ -416,6 +475,12 @@ func (r *StorageClaimReconciler) reconcilePhases() (reconcile.Result, error) {
 		if err != nil {
 			return reconcile.Result{}, fmt.Errorf("failed to update mon configmap: %v", err)
 		}
+
+		if pendingOps, ok := r.storageClaim.Annotations[pendingOperationsAnnotation]; ok {
+			r.log.Info("waiting for pending operations to complete", "Operations", pendingOps)
+			return reconcile.Result{RequeueAfter: time.Second * 5}, nil
+		}
+
 		// Readiness phase.
 		// Update the StorageClaim status.
 		r.storageClaim.Status.Phase = v1alpha1.StorageClaimReady
