@@ -83,3 +83,6 @@ push-bundle: bundle-build bundle-push ## Build & Push operator bundle image
 push-index: catalog-build catalog-push ## Build & Push catalogcourse index image
 
 push-all: push-op push-bundle push-index ## Build & Push all container images
+
+reset: ## Delete some Pods
+	$(OCP_OC) -n $(OPERATOR_NAMESPACE) delete po -l=operator=ocs-client
