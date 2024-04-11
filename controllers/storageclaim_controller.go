@@ -120,6 +120,7 @@ func (r *StorageClaimReconciler) SetupWithManager(mgr ctrl.Manager) error {
 //+kubebuilder:rbac:groups=ocs.openshift.io,resources=storageclaims/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=ocs.openshift.io,resources=storageclaims/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
+//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;create;update;watch;delete
 //+kubebuilder:rbac:groups=storage.k8s.io,resources=storageclasses,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=snapshot.storage.k8s.io,resources=volumesnapshotclasses,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups=core,resources=persistentvolumes,verbs=get;list;watch
@@ -412,16 +413,19 @@ func (r *StorageClaimReconciler) reconcilePhases() (reconcile.Result, error) {
 					return reconcile.Result{}, fmt.Errorf("failed to create or update VolumeSnapshotClass: %s", err)
 				}
 			case "Job":
-				var job *batchv1.Job
+				job := &batchv1.Job{}
 				err = json.Unmarshal([]byte(data["job-manifest"]), job)
 				if err != nil {
 					return reconcile.Result{}, fmt.Errorf("failed to unmarshal StorageClaim Job %q: %v", resource.Name, err)
 				}
 
+				job.Name = resource.Name + "-" + r.storageClaimHash
+				job.Namespace = r.OperatorNamespace
+
 				opType := data["op-type"]
 				opPhase := data["op-phase"]
 				opPhaseAnnotation := opType + ".ops.ocs.openshift.io/phase"
-				previousPhase, previousPhaseFound := r.storageClaim.Annotations[opPhaseAnnotation]
+				previousPhase := r.storageClaim.Annotations[opPhaseAnnotation]
 
 				pendingOps := strings.Split(r.storageClaim.Annotations[pendingOperationsAnnotation], ",")
 				if !slices.Contains(pendingOps, opType) {
@@ -429,11 +433,34 @@ func (r *StorageClaimReconciler) reconcilePhases() (reconcile.Result, error) {
 				}
 
 				if opPhase == "Requested" {
-					if !previousPhaseFound || previousPhase == opPhase {
+					if previousPhase == "" || previousPhase == opPhase {
 						r.log.Info("provider has requested an operation", "StorageClaim", r.storageClaim.Name, "Operation", opType)
 					} else {
 						opPhase = previousPhase
 					}
+				}
+
+				if opPhase == "Approved" {
+					_, err = controllerutil.CreateOrUpdate(r.ctx, r.Client, job, func() error {
+						// cluster scoped resource owning namespace scoped resource which allows garbage collection
+						if err := r.own(job); err != nil {
+							return fmt.Errorf("failed to own job: %v", err)
+						}
+
+						for i, c := range job.Spec.Template.Spec.Containers {
+							c.Env = append(c.Env, corev1.EnvVar{Name: "STORAGE_CLAIM", Value: r.storageClaim.Name})
+							c.Env = append(c.Env, corev1.EnvVar{Name: "OP_PHASE", Value: opPhase})
+							c.Env = append(c.Env, corev1.EnvVar{Name: "CLUSTER_ID", Value: r.storageClaimHash})
+							job.Spec.Template.Spec.Containers[i] = c
+						}
+
+						return nil
+					})
+					if err != nil {
+						return reconcile.Result{}, fmt.Errorf("failed to create or update Job %v: %s", job, err)
+					}
+
+					opPhase = "Running"
 				}
 
 				updateStorageClaim = false
@@ -444,28 +471,6 @@ func (r *StorageClaimReconciler) reconcilePhases() (reconcile.Result, error) {
 					if err := r.update(r.storageClaim); err != nil {
 						return reconcile.Result{}, fmt.Errorf("failed to update StorageClaim %q: %v", r.storageClaim.Name, err)
 					}
-				}
-
-				if opPhase == "Requested" || opPhase == "Completed" {
-					break
-				}
-
-				_, err = controllerutil.CreateOrUpdate(r.ctx, r.Client, job, func() error {
-					// cluster scoped resource owning namespace scoped resource which allows garbage collection
-					if err := r.own(job); err != nil {
-						return fmt.Errorf("failed to own job: %v", err)
-					}
-
-					for _, c := range job.Spec.Template.Spec.Containers {
-						c.Env = append(c.Env, corev1.EnvVar{Name: "STORAGE_CLAIM", Value: r.storageClaim.Name})
-						c.Env = append(c.Env, corev1.EnvVar{Name: "OP_PHASE", Value: opPhase})
-						c.Env = append(c.Env, corev1.EnvVar{Name: "CLUSTER_ID", Value: r.storageClaimHash})
-					}
-
-					return nil
-				})
-				if err != nil {
-					return reconcile.Result{}, fmt.Errorf("failed to create or update Job %v: %s", job, err)
 				}
 			}
 		}
